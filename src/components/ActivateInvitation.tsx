@@ -11,7 +11,6 @@ import {
   Typography,
 } from '@mui/material'
 import MarkEmailReadOutlinedIcon from '@mui/icons-material/MarkEmailReadOutlined'
-import { useAcceptInvitation, useVerifyInvitation } from '../hooks/useInvitationActivation'
 import type { AuthUser } from '../types/users.types'
 
 type ActivateInvitationProps = {
@@ -19,65 +18,77 @@ type ActivateInvitationProps = {
 }
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const API_BASE_URL = 'http://localhost:5006' // Используйте ваш реальный URL
 
 const ActivateInvitation = ({ onActivateSuccess }: ActivateInvitationProps) => {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') ?? ''
-  const [email, setEmail] = useState<string | null>(null)
+
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [clientError, setClientError] = useState('')
-  const {
-    data: invitation,
-    error: verifyError,
-    isError: isVerifyError,
-    isLoading: isVerifyLoading,
-  } = useVerifyInvitation(token)
-  const {
-    error: acceptError,
-    isPending: isAcceptPending,
-    mutate,
-  } = useAcceptInvitation()
+  const [isAcceptPending, setIsAcceptPending] = useState(false)
+  const [error, setError] = useState('')
 
-  const emailValue = email ?? invitation?.email ?? ''
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setClientError('')
+    setError('')
 
-    const normalizedEmail = emailValue.trim()
+    const trimmedEmail = email.trim()
+    const trimmedPassword = password.trim()
 
     if (!token) {
-      setClientError('В ссылке отсутствует токен приглашения.')
+      setError('В ссылке отсутствует токен приглашения.')
       return
     }
 
-    if (!emailPattern.test(normalizedEmail)) {
-      setClientError('Введите корректный email.')
+    if (!emailPattern.test(trimmedEmail)) {
+      setError('Введите корректный email.')
       return
     }
 
-    if (invitation?.email && normalizedEmail !== invitation.email) {
-      setClientError('Email должен совпадать с адресом из приглашения.')
+    if (trimmedPassword.length < 8) {
+      setError('Пароль должен содержать минимум 8 символов.')
       return
     }
 
-    if (password.length < 8) {
-      setClientError('Пароль должен содержать минимум 8 символов.')
-      return
-    }
+    setIsAcceptPending(true)
 
-    mutate(
-      {
-        token,
-        password,
-      },
-      {
-        onSuccess: (response) => {
-          onActivateSuccess(response.accessToken, response.user)
-          navigate('/cabinet', { replace: true })
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/activate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      },
+        body: JSON.stringify({
+          token,
+          password: trimmedPassword,
+        }),
+      })
+
+      if (!response.ok) {
+        if (response.status === 400 || response.status === 404) {
+          throw new Error('Ссылка недействительна или срок её действия истек. Запросите новое приглашение.')
+        }
+        throw new Error('Не удалось завершить регистрацию. Попробуйте позже.')
+      }
+
+      const result = (await response.json()) as { accessToken: string; user: AuthUser }
+      
+      onActivateSuccess(result.accessToken, result.user)
+      navigate('/cabinet', { replace: true })
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Неизвестная ошибка при регистрации.')
+    } finally {
+      setIsAcceptPending(false)
+    }
+  }
+
+  if (!token) {
+    return (
+      <Container maxWidth="sm" sx={{ mt: 8 }}>
+        <Alert severity="error">В ссылке отсутствует токен приглашения.</Alert>
+      </Container>
     )
   }
 
@@ -98,60 +109,38 @@ const ActivateInvitation = ({ onActivateSuccess }: ActivateInvitationProps) => {
             </Typography>
           </Box>
 
-          {!token ? (
-            <Alert severity="error">В ссылке отсутствует токен приглашения.</Alert>
-          ) : null}
-
-          {isVerifyLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
-              <CircularProgress />
-            </Box>
-          ) : null}
-
-          {isVerifyError ? (
-            <Alert severity="error">{verifyError.message}</Alert>
-          ) : null}
-
-          {invitation ? (
-            <Alert severity="info">
-              Вы приглашены в организацию {invitation.organizationName} в
-              качестве {invitation.role}.
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
             </Alert>
-          ) : null}
+          )}
 
           <Box component="form" className="login-form" onSubmit={handleSubmit}>
-            {clientError ? <Alert severity="error">{clientError}</Alert> : null}
-            {acceptError ? (
-              <Alert severity="error">{acceptError.message}</Alert>
-            ) : null}
-
             <TextField
               autoComplete="email"
               autoFocus
-              disabled={isVerifyLoading || isAcceptPending || isVerifyError}
+              disabled={isAcceptPending}
               fullWidth
               label="Email"
-              onChange={(event) => setEmail(event.target.value)}
+              onChange={(e) => setEmail(e.target.value)}
               required
               type="email"
-              value={emailValue}
+              value={email}
             />
 
             <TextField
               autoComplete="new-password"
-              disabled={isVerifyLoading || isAcceptPending || isVerifyError}
+              disabled={isAcceptPending}
               fullWidth
               label="Пароль"
-              onChange={(event) => setPassword(event.target.value)}
+              onChange={(e) => setPassword(e.target.value)}
               required
               type="password"
               value={password}
             />
 
             <Button
-              disabled={
-                !token || isVerifyLoading || isAcceptPending || isVerifyError
-              }
+              disabled={isAcceptPending}
               fullWidth
               size="large"
               type="submit"
