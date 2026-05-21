@@ -24,7 +24,7 @@ type LoginCompProps = {
   onLoginSuccess: (accessToken: string, user: AuthUser) => void;
 };
 
-const API_BASE_URL = apiUrl
+const API_BASE_URL = apiUrl;
 
 const LoginComp = ({ onLoginSuccess }: LoginCompProps) => {
   const navigate = useNavigate();
@@ -74,13 +74,6 @@ const LoginComp = ({ onLoginSuccess }: LoginCompProps) => {
       }
 
       onLoginSuccess(data.accessToken, data.user);
-
-      const role = data.user.globalRole;
-      if (role === "STUDENT" || role === "USER") {
-        navigate("/cabinet", { replace: true });
-      } else {
-        navigate("/organizations", { replace: true });
-      }
     } catch {
       setError("Сервер недоступен. Проверьте подключение и попробуйте снова.");
     } finally {

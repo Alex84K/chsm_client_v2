@@ -1,42 +1,52 @@
-import * as React from 'react'
-import { useNavigate } from 'react-router-dom'
-import Alert from '@mui/material/Alert'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import CircularProgress from '@mui/material/CircularProgress'
-import Container from '@mui/material/Container'
-import Paper from '@mui/material/Paper'
-import Typography from '@mui/material/Typography'
-import BusinessIcon from '@mui/icons-material/Business'
-import { useUserOrganizations } from '../hooks/useUserOrganizations'
-import type { UserOrganizationItem } from '../types/users.types'
-import { setCurrentOrgId } from '../utils/getOrganisationsUtils'
+import * as React from "react";
+import { useNavigate } from "react-router-dom";
+import Alert from "@mui/material/Alert";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import CircularProgress from "@mui/material/CircularProgress";
+import Container from "@mui/material/Container";
+import Paper from "@mui/material/Paper";
+import Typography from "@mui/material/Typography";
+import BusinessIcon from "@mui/icons-material/Business";
+import { useUserOrganizations } from "../hooks/useUserOrganizations";
+import type { UserOrganizationItem } from "../types/users.types";
+import { setCurrentOrgDetails } from "../utils/getOrganisationsUtils";
 
 type OrganizationSelectProps = {
-  onOrganizationSelect: (organizationId: string) => void
-}
+  onOrganizationSelect: (organizationId: string, role: string) => void;
+};
 
 const OrganizationSelect = ({
   onOrganizationSelect,
 }: OrganizationSelectProps) => {
-  const navigate = useNavigate()
-  const { data: organizations = [], error, isError, isLoading } = useUserOrganizations()
+  const navigate = useNavigate();
+  const {
+    data: organizations = [],
+    error,
+    isError,
+    isLoading,
+  } = useUserOrganizations();
 
   const selectOrganization = React.useCallback(
     (organization: UserOrganizationItem) => {
-      setCurrentOrgId(organization.id)
-      onOrganizationSelect(organization.id)
-      navigate('/admin', { replace: true })
+      setCurrentOrgDetails(organization.id, organization.role);
+      onOrganizationSelect(organization.id, organization.role);
+
+      if (organization.role === "STUDENT" || organization.role === "USER") {
+        navigate("/cabinet", { replace: true });
+      } else {
+        navigate("/admin", { replace: true });
+      }
     },
     [navigate, onOrganizationSelect],
-  )
+  );
 
   React.useEffect(() => {
     if (organizations.length === 1) {
-      selectOrganization(organizations[0])
+      selectOrganization(organizations[0]);
     }
-  }, [organizations, selectOrganization])
+  }, [organizations, selectOrganization]);
 
   return (
     <Box className="login-screen">
@@ -56,7 +66,7 @@ const OrganizationSelect = ({
           </Box>
 
           {isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', py: 5 }}>
+            <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
               <CircularProgress />
             </Box>
           ) : null}
@@ -79,7 +89,9 @@ const OrganizationSelect = ({
                   onClick={() => selectOrganization(organization)}
                   variant="outlined"
                 >
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                  <Box
+                    sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                  >
                     <Typography color="text.primary" variant="subtitle1">
                       {organization.name}
                     </Typography>
@@ -95,7 +107,7 @@ const OrganizationSelect = ({
         </Paper>
       </Container>
     </Box>
-  )
-}
+  );
+};
 
-export default OrganizationSelect
+export default OrganizationSelect;

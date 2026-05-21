@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import ActivateInvitation from "./components/ActivateInvitation";
+import ConfirmOrganization from "./components/ConfirmOrganization";
+import AcceptInvitation from "./components/AcceptInvitation";
 import ForgotPassword from "./components/ForgotPassword";
 import ResetPassword from "./components/ResetPassword";
 import AdminPanel from "./components/AdminPanel";
@@ -8,17 +9,20 @@ import Cabinet from "./components/Cabinet";
 import LoginComp from "./components/LoginComp";
 import OrganizationSelect from "./components/OrganizationSelect";
 import AccountCreationRequest from "./components/AccountCreationRequest";
-import type { AuthUser, GlobalUserRole } from "./types/users.types";
+import type {
+  AuthUser,
+} from "./types/users.types";
 import {
-  clearCurrentOrgId,
+  clearCurrentOrgDetails,
   getCurrentOrgId,
+  getCurrentOrgRole,
 } from "./utils/getOrganisationsUtils";
 import "./App.css";
 
 const TOKEN_STORAGE_KEY = "accessToken";
 const USER_STORAGE_KEY = "adminPanelUser";
 
-const isRestrictedRole = (role: GlobalUserRole): boolean =>
+const isRestrictedOrgRole = (role: string): boolean =>
   role === "STUDENT" || role === "USER";
 
 function App() {
@@ -39,36 +43,45 @@ function App() {
   const [activeOrganizationId, setActiveOrganizationId] = useState(() =>
     getCurrentOrgId(),
   );
+  const [activeOrgRole, setActiveOrgRole] = useState(() => getCurrentOrgRole());
 
-  const isRestricted = currentUser
-    ? isRestrictedRole(currentUser.globalRole)
+  const isOrgRestricted = activeOrgRole
+    ? isRestrictedOrgRole(activeOrgRole)
     : false;
 
   const handleLoginSuccess = (token: string, nextUser: AuthUser) => {
     sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
     sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(nextUser));
-    clearCurrentOrgId();
+    clearCurrentOrgDetails();
     setAccessToken(token);
     setCurrentUser(nextUser);
     setActiveOrganizationId("");
+    setActiveOrgRole("");
   };
 
   const handleActivateSuccess = (token: string, nextUser: AuthUser) => {
     sessionStorage.setItem(TOKEN_STORAGE_KEY, token);
     sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(nextUser));
-    clearCurrentOrgId();
+    clearCurrentOrgDetails();
     setAccessToken(token);
     setCurrentUser(nextUser);
     setActiveOrganizationId("");
+    setActiveOrgRole("");
   };
 
   const handleLogout = () => {
     sessionStorage.removeItem(TOKEN_STORAGE_KEY);
     sessionStorage.removeItem(USER_STORAGE_KEY);
-    clearCurrentOrgId();
+    clearCurrentOrgDetails();
     setAccessToken("");
     setCurrentUser(null);
     setActiveOrganizationId("");
+    setActiveOrgRole("");
+  };
+
+  const handleOrganizationSelect = (orgId: string, role: string) => {
+    setActiveOrganizationId(orgId);
+    setActiveOrgRole(role);
   };
 
   return (
@@ -80,11 +93,11 @@ function App() {
             <Navigate
               to={
                 accessToken
-                  ? isRestricted
-                    ? "/cabinet"
-                    : activeOrganizationId
-                      ? "/admin"
-                      : "/organizations"
+                  ? activeOrganizationId
+                    ? isOrgRestricted
+                      ? "/cabinet"
+                      : "/admin"
+                    : "/organizations"
                   : "/login"
               }
               replace
@@ -97,11 +110,11 @@ function App() {
             accessToken ? (
               <Navigate
                 to={
-                  isRestricted
-                    ? "/cabinet"
-                    : activeOrganizationId
-                      ? "/admin"
-                      : "/organizations"
+                  activeOrganizationId
+                    ? isOrgRestricted
+                      ? "/cabinet"
+                      : "/admin"
+                    : "/organizations"
                 }
                 replace
               />
@@ -118,18 +131,20 @@ function App() {
         <Route
           path="/auth/activate"
           element={
-            <ActivateInvitation onActivateSuccess={handleActivateSuccess} />
+            <ConfirmOrganization onActivateSuccess={handleActivateSuccess} />
           }
+        />
+        <Route
+          path="/auth/invitation"
+          element={<AcceptInvitation onAcceptSuccess={handleActivateSuccess} />}
         />
         <Route
           path="/organizations"
           element={
-            accessToken && !isRestricted ? (
+            accessToken ? (
               <OrganizationSelect
-                onOrganizationSelect={setActiveOrganizationId}
+                onOrganizationSelect={handleOrganizationSelect}
               />
-            ) : accessToken && isRestricted ? (
-              <Navigate to="/cabinet" replace />
             ) : (
               <Navigate to="/login" replace />
             )
@@ -138,23 +153,10 @@ function App() {
         <Route
           path="/cabinet"
           element={
-            accessToken ? (
+            accessToken && activeOrganizationId && isOrgRestricted ? (
               <Cabinet onLogout={handleLogout} />
-            ) : (
-              <Navigate to="/login" replace />
-            )
-          }
-        />
-        <Route
-          path="/admin"
-          element={
-            accessToken && activeOrganizationId && !isRestricted ? (
-              <AdminPanel
-                currentOrgId={activeOrganizationId}
-                onLogout={handleLogout}
-              />
-            ) : accessToken && isRestricted ? (
-              <Navigate to="/cabinet" replace />
+            ) : accessToken && activeOrganizationId && !isOrgRestricted ? (
+              <Navigate to="/admin" replace />
             ) : accessToken ? (
               <Navigate to="/organizations" replace />
             ) : (
@@ -163,25 +165,36 @@ function App() {
           }
         />
         <Route
-          path="/auth/forgot-password"
-          element={<ForgotPassword />}
+          path="/admin"
+          element={
+            accessToken && activeOrganizationId && !isOrgRestricted ? (
+              <AdminPanel
+                currentOrgId={activeOrganizationId}
+                onLogout={handleLogout}
+              />
+            ) : accessToken && activeOrganizationId && isOrgRestricted ? (
+              <Navigate to="/cabinet" replace />
+            ) : accessToken ? (
+              <Navigate to="/organizations" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
         />
-        <Route
-          path="/auth/reset-password"
-          element={<ResetPassword />}
-        />
+        <Route path="/auth/forgot-password" element={<ForgotPassword />} />
+        <Route path="/auth/reset-password" element={<ResetPassword />} />
         <Route
           path="*"
           element={
             <Navigate
               to={
                 accessToken
-                  ? isRestricted
-                    ? "/cabinet"
-                    : activeOrganizationId
-                      ? "/admin"
-                      : "/organizations"
-                    : "/login"
+                  ? activeOrganizationId
+                    ? isOrgRestricted
+                      ? "/cabinet"
+                      : "/admin"
+                    : "/organizations"
+                  : "/login"
               }
               replace
             />
