@@ -13,6 +13,7 @@ import {
 } from "@mui/material";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import type { AuthUser } from "../types/users.types";
+import { apiUrl } from "../api/apiConfig";
 
 type LoginResponse = {
   accessToken: string;
@@ -23,8 +24,7 @@ type LoginCompProps = {
   onLoginSuccess: (accessToken: string, user: AuthUser) => void;
 };
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "https://serv.chsm.pro";
+const API_BASE_URL = apiUrl
 
 const LoginComp = ({ onLoginSuccess }: LoginCompProps) => {
   const navigate = useNavigate();

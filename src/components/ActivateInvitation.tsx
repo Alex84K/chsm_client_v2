@@ -12,13 +12,13 @@ import {
 } from '@mui/material'
 import MarkEmailReadOutlinedIcon from '@mui/icons-material/MarkEmailReadOutlined'
 import type { AuthUser } from '../types/users.types'
+import { apiUrl } from '../api/apiConfig'
 
 type ActivateInvitationProps = {
   onActivateSuccess: (accessToken: string, user: AuthUser) => void
 }
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const API_BASE_URL = 'http://localhost:5006' // Используйте ваш реальный URL
 
 const ActivateInvitation = ({ onActivateSuccess }: ActivateInvitationProps) => {
   const navigate = useNavigate()
@@ -55,7 +55,7 @@ const ActivateInvitation = ({ onActivateSuccess }: ActivateInvitationProps) => {
     setIsAcceptPending(true)
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/activate`, {
+      const response = await fetch(`${apiUrl}/auth/activate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
