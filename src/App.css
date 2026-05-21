@@ -1,0 +1,177 @@
+.login-screen,
+.admin-screen {
+  min-height: 100svh;
+  background:
+    linear-gradient(120deg, rgba(21, 101, 192, 0.08), transparent 36%),
+    linear-gradient(320deg, rgba(46, 125, 50, 0.08), transparent 34%),
+    #f7f9fc;
+}
+
+.login-screen,
+.login-container,
+.login-card,
+.login-heading,
+.login-form,
+.admin-screen,
+.admin-toolbar,
+.admin-brand,
+.admin-container,
+.admin-placeholder,
+.admin-placeholder-copy {
+  display: flex;
+}
+
+.login-screen {
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  box-sizing: border-box;
+}
+
+.login-container {
+  justify-content: center;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 460px;
+  flex-direction: column;
+  gap: 28px;
+  padding: 40px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.organization-card {
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 40px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+
+.organization-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.organization-option {
+  min-height: 76px;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  text-align: left;
+}
+
+.login-icon,
+.admin-placeholder-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1565c0;
+  background: #e8f1fb;
+}
+
+.login-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+}
+
+.login-heading,
+.login-form,
+.admin-placeholder-copy {
+  flex-direction: column;
+}
+
+.login-heading {
+  gap: 8px;
+}
+
+.login-form {
+  gap: 18px;
+}
+
+.admin-screen {
+  flex-direction: column;
+}
+
+.admin-toolbar {
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 72px;
+  border-bottom: 1px solid #dbe3ef;
+}
+
+.admin-brand {
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.admin-container {
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding-top: 48px;
+  padding-bottom: 48px;
+}
+
+.admin-placeholder {
+  width: 100%;
+  min-height: 360px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 24px;
+  padding: 48px;
+  border: 1px solid #dbe3ef;
+  border-radius: 8px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.admin-placeholder-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+}
+
+.admin-placeholder-icon svg {
+  font-size: 34px;
+}
+
+.admin-placeholder-copy {
+  max-width: 620px;
+  gap: 10px;
+}
+
+@media (max-width: 640px) {
+  .login-card,
+  .organization-card,
+  .admin-placeholder {
+    padding: 24px;
+  }
+
+  .organization-option {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  .admin-toolbar .MuiButton-root {
+    align-self: stretch;
+  }
+}

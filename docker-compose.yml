@@ -1,0 +1,8 @@
+services:
+  chsm_client:
+    build: .
+    image: chsm_client2:latest
+    container_name: chsm_client2
+    ports:
+      - "3014:80"
+    command: nginx -g 'daemon off;'
