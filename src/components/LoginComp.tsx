@@ -89,8 +89,8 @@ const LoginComp = ({ onLoginSuccess }: LoginCompProps) => {
   };
 
   return (
-    <Box className="login-screen">
-      <Container maxWidth="sm" className="login-container">
+    <Box className="">
+      <Container maxWidth="sm" className="login-container pt-5 pb-5">
         <Paper elevation={0} className="login-card">
           <Box className="login-icon" aria-hidden="true">
             <LockOutlinedIcon />
@@ -133,7 +133,11 @@ const LoginComp = ({ onLoginSuccess }: LoginCompProps) => {
               value={password}
             />
             <Box sx={{ mt: 1, textAlign: "right" }}>
-              <Link component={"a"} href="/auth/forgot-password" variant="body2">
+              <Link
+                component={"a"}
+                href="/auth/forgot-password"
+                variant="body2"
+              >
                 Забыли пароль?
               </Link>
             </Box>
@@ -151,6 +155,23 @@ const LoginComp = ({ onLoginSuccess }: LoginCompProps) => {
                 "Войти"
               )}
             </Button>
+          </Box>
+        </Paper>
+      </Container>
+
+      <Container maxWidth="sm" className="">
+        <Paper elevation={0} className="">
+          <Box sx={{ mt: 2, textAlign: "center" }}>
+            <Typography variant="body2" color="text.secondary">
+              Нет аккаунта?{" "}
+            </Typography>
+            <Link
+              component="button"
+              variant="body2"
+              onClick={() => navigate("/create-organization-request")}
+            >
+              Создать организацию
+            </Link>
           </Box>
         </Paper>
       </Container>

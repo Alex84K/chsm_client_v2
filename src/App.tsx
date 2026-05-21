@@ -7,6 +7,7 @@ import AdminPanel from "./components/AdminPanel";
 import Cabinet from "./components/Cabinet";
 import LoginComp from "./components/LoginComp";
 import OrganizationSelect from "./components/OrganizationSelect";
+import AccountCreationRequest from "./components/AccountCreationRequest";
 import type { AuthUser, GlobalUserRole } from "./types/users.types";
 import {
   clearCurrentOrgId,
@@ -109,6 +110,11 @@ function App() {
             )
           }
         />
+        {/* Открытый маршрут для создания заявки на организацию */}
+        <Route
+          path="/create-organization-request"
+          element={<AccountCreationRequest />}
+        />
         <Route
           path="/auth/activate"
           element={
@@ -139,48 +145,48 @@ function App() {
             )
           }
         />
-          <Route
-            path="/admin"
-            element={
-              accessToken && activeOrganizationId && !isRestricted ? (
-                <AdminPanel
-                  currentOrgId={activeOrganizationId}
-                  onLogout={handleLogout}
-                />
-              ) : accessToken && isRestricted ? (
-                <Navigate to="/cabinet" replace />
-              ) : accessToken ? (
-                <Navigate to="/organizations" replace />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/auth/forgot-password"
-            element={<ForgotPassword />}
-          />
-          <Route
-            path="/auth/reset-password"
-            element={<ResetPassword />}
-          />
-          <Route
-            path="*"
-            element={
-              <Navigate
-                to={
-                  accessToken
-                    ? isRestricted
-                      ? "/cabinet"
-                      : activeOrganizationId
-                        ? "/admin"
-                        : "/organizations"
-                    : "/login"
-                }
-                replace
+        <Route
+          path="/admin"
+          element={
+            accessToken && activeOrganizationId && !isRestricted ? (
+              <AdminPanel
+                currentOrgId={activeOrganizationId}
+                onLogout={handleLogout}
               />
-            }
-          />
+            ) : accessToken && isRestricted ? (
+              <Navigate to="/cabinet" replace />
+            ) : accessToken ? (
+              <Navigate to="/organizations" replace />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route
+          path="/auth/forgot-password"
+          element={<ForgotPassword />}
+        />
+        <Route
+          path="/auth/reset-password"
+          element={<ResetPassword />}
+        />
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to={
+                accessToken
+                  ? isRestricted
+                    ? "/cabinet"
+                    : activeOrganizationId
+                      ? "/admin"
+                      : "/organizations"
+                    : "/login"
+              }
+              replace
+            />
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

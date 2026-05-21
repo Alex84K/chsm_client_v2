@@ -86,3 +86,9 @@ export type UsersQueryError = {
   status?: number
   message: string
 }
+
+export interface AccountCreationRequest {
+  applicantName: string,
+  applicantEmail: string,
+  organizationName: string
+}
