@@ -54,6 +54,9 @@ export const useVerifyInvitation = (token: string) =>
     },
     enabled: Boolean(token),
     retry: false,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    staleTime: Infinity,
   })
 
 export const useAcceptInvitation = () =>
