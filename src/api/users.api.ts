@@ -2,6 +2,8 @@ import apiClient from './apiClient'
 import type {
   AcceptInvitationRequest,
   AcceptInvitationResponse,
+  ChangeMemberRoleRequest,
+  ChangeMemberRoleResponse,
   GetOrganizationMembersResponse,
   InvitationResponse,
   SendInvitationRequest,
@@ -13,7 +15,6 @@ export const getUserOrganizations = async (): Promise<UserOrganizationsResponse>
   const response = await apiClient.get<UserOrganizationsResponse>(
     '/auth/user/organizations',
   )
-
   return response.data
 }
 
@@ -36,6 +37,29 @@ export const sendOrganizationInvitation = async (
     payload,
   )
 
+  return response.data
+}
+
+export const changeOrganizationMemberRole = async (
+  organizationId: string,
+  userId: string,
+  payload: ChangeMemberRoleRequest,
+): Promise<ChangeMemberRoleResponse> => {
+  const response = await apiClient.patch<ChangeMemberRoleResponse>(
+    `/organizations/${organizationId}/members/${userId}/role`,
+    payload,
+  )
+
+  return response.data
+}
+
+export const removeUserOrganisation = async (
+  organizationId: string,
+  userId: string,
+): Promise<ChangeMemberRoleResponse> => {
+  const response = await apiClient.delete<ChangeMemberRoleResponse>(
+    `/organizations/${organizationId}/members/${userId}`,
+  )
   return response.data
 }
 

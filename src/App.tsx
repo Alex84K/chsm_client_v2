@@ -29,7 +29,7 @@ function App() {
   const [accessToken, setAccessToken] = useState(
     () => sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? "",
   );
-  const [currentUser, setCurrentUser] = useState<AuthUser | null>(() => {
+  const [, setCurrentUser] = useState<AuthUser | null>(() => {
     const raw = sessionStorage.getItem(USER_STORAGE_KEY);
     if (raw) {
       try {

@@ -58,10 +58,14 @@ const AccountCreationRequest = () => {
 
       alert("Спасибо! Ваша заявка будет рассмотрена.");
 
+
       // Очищаем форму после успешной отправки
       setApplicantName("");
       setApplicantEmail("");
       setOrganizationName("");
+
+      window.location.href = "https://chsm.pro/";
+      
     } catch (err: any) {
       if (err.response?.status === 401) {
         setError("Не авторизован. Пожалуйста, войдите в систему.");

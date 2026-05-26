@@ -1,5 +1,4 @@
 import * as React from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import {
   styled,
@@ -9,29 +8,20 @@ import {
 } from '@mui/material/styles'
 import Alert from '@mui/material/Alert'
 import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Chip from '@mui/material/Chip'
-import CircularProgress from '@mui/material/CircularProgress'
 import CssBaseline from '@mui/material/CssBaseline'
 import Divider from '@mui/material/Divider'
 import IconButton from '@mui/material/IconButton'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import ListItemText from '@mui/material/ListItemText'
 import MuiAppBar, {
   type AppBarProps as MuiAppBarProps,
 } from '@mui/material/AppBar'
 import MuiDrawer from '@mui/material/Drawer'
 import Paper from '@mui/material/Paper'
-import Tab from '@mui/material/Tab'
-import Table from '@mui/material/Table'
-import TableBody from '@mui/material/TableBody'
-import TableCell from '@mui/material/TableCell'
-import TableContainer from '@mui/material/TableContainer'
-import TableHead from '@mui/material/TableHead'
-import TableRow from '@mui/material/TableRow'
-import Tabs from '@mui/material/Tabs'
 import Toolbar from '@mui/material/Toolbar'
 import Typography from '@mui/material/Typography'
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth'
-import AddIcon from '@mui/icons-material/Add'
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
 import ChevronRightIcon from '@mui/icons-material/ChevronRight'
 import HomeIcon from '@mui/icons-material/Home'
@@ -39,12 +29,8 @@ import MenuIcon from '@mui/icons-material/Menu'
 import PeopleIcon from '@mui/icons-material/People'
 import SchoolIcon from '@mui/icons-material/School'
 import SettingsIcon from '@mui/icons-material/Settings'
-import { useOrganizationMembers } from '../hooks/useOrganizationMembers'
-import InvitModal from '../modals/InvitModal'
-import type {
-  InvitationResponse,
-  OrganizationMember,
-} from '../types/users.types'
+import StudentList from './StudentList'
+import UserList from './UserList'
 
 const drawerWidth = 240
 
@@ -134,56 +120,43 @@ type AdminPanelProps = {
   onLogout: () => void
 }
 
-type TabPanelProps = {
-  children: React.ReactNode
-  index: number
-  value: number
-}
-
-const TabPanel = ({ children, index, value }: TabPanelProps) => (
-  <Box hidden={value !== index} role="tabpanel">
-    {value === index ? children : null}
-  </Box>
-)
-
-const formatDate = (date: string) =>
-  new Intl.DateTimeFormat('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(date))
-
-const getMemberName = (member: OrganizationMember) =>
-  member.user.name || 'Без имени'
+type AdminSection = 'users' | 'students' | 'sessions' | 'settings'
 
 const AdminPanel = ({ currentOrgId, onLogout }: AdminPanelProps) => {
   const theme = useTheme()
   const navigate = useNavigate()
-  const queryClient = useQueryClient()
   const [open, setOpen] = React.useState(false)
-  const [activeTab, setActiveTab] = React.useState(0)
-  const [isInvitationModalOpen, setIsInvitationModalOpen] =
-    React.useState(false)
-  const [successMessage, setSuccessMessage] = React.useState('')
-  const {
-    data: members = [],
-    error,
-    isError,
-    isLoading,
-  } = useOrganizationMembers(currentOrgId)
+  const [activeSection, setActiveSection] =
+    React.useState<AdminSection>('users')
 
   const handleLogout = () => {
     onLogout()
     navigate('/login', { replace: true })
   }
 
-  const handleInvitationSuccess = (invitation: InvitationResponse) => {
-    setSuccessMessage(
-      `Приглашение успешно отправлено на ${invitation.email}. Ссылка действительна 48 часов.`,
-    )
-    void queryClient.invalidateQueries({
-      queryKey: ['organization-members', currentOrgId],
-    })
+  const renderContent = () => {
+    if (!currentOrgId) {
+      return (
+        <Alert severity="warning">
+          Не задан идентификатор организации. Выберите организацию для
+          продолжения.
+        </Alert>
+      )
+    }
+
+    if (activeSection === 'users') {
+      return <UserList currentOrgId={currentOrgId} />
+    }
+
+    if (activeSection === 'students') {
+      return <StudentList currentOrgId={currentOrgId} />
+    }
+
+    if (activeSection === 'sessions') {
+      return <Alert severity="info">Раздел занятий будет добавлен позже.</Alert>
+    }
+
+    return <Alert severity="info">Настройки организации будут добавлены позже.</Alert>
   }
 
   return (
@@ -221,18 +194,46 @@ const AdminPanel = ({ currentOrgId, onLogout }: AdminPanelProps) => {
         </DrawerHeader>
         <Divider />
         <Box sx={{ display: 'flex', flexDirection: 'column', py: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1.5 }}>
-            <PeopleIcon color="primary" />
-            {open ? <Typography>Users</Typography> : null}
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1.5 }}>
-            <SchoolIcon color="disabled" />
-            {open ? <Typography color="text.secondary">Students</Typography> : null}
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, px: 2, py: 1.5 }}>
-            <CalendarMonthIcon color="disabled" />
-            {open ? <Typography color="text.secondary">Sessions</Typography> : null}
-          </Box>
+          <ListItemButton
+            onClick={() => setActiveSection('users')}
+            selected={activeSection === 'users'}
+          >
+            <ListItemIcon>
+              <PeopleIcon color={activeSection === 'users' ? 'primary' : 'inherit'} />
+            </ListItemIcon>
+            {open ? <ListItemText primary="Users" /> : null}
+          </ListItemButton>
+          <ListItemButton
+            onClick={() => setActiveSection('students')}
+            selected={activeSection === 'students'}
+          >
+            <ListItemIcon>
+              <SchoolIcon color={activeSection === 'students' ? 'primary' : 'inherit'} />
+            </ListItemIcon>
+            {open ? <ListItemText primary="Students" /> : null}
+          </ListItemButton>
+          <ListItemButton
+            onClick={() => setActiveSection('sessions')}
+            selected={activeSection === 'sessions'}
+          >
+            <ListItemIcon>
+              <CalendarMonthIcon
+                color={activeSection === 'sessions' ? 'primary' : 'inherit'}
+              />
+            </ListItemIcon>
+            {open ? <ListItemText primary="Sessions" /> : null}
+          </ListItemButton>
+          <ListItemButton
+            onClick={() => setActiveSection('settings')}
+            selected={activeSection === 'settings'}
+          >
+            <ListItemIcon>
+              <SettingsIcon
+                color={activeSection === 'settings' ? 'primary' : 'inherit'}
+              />
+            </ListItemIcon>
+            {open ? <ListItemText primary="Settings" /> : null}
+          </ListItemButton>
         </Box>
       </Drawer>
 
@@ -259,134 +260,9 @@ const AdminPanel = ({ currentOrgId, onLogout }: AdminPanelProps) => {
 
           <Divider />
 
-          <Tabs
-            onChange={(_, nextTab) => setActiveTab(nextTab)}
-            value={activeTab}
-            variant="scrollable"
-          >
-            <Tab icon={<PeopleIcon />} iconPosition="start" label="Пользователи" />
-            <Tab icon={<SchoolIcon />} iconPosition="start" label="Обучение" />
-            <Tab icon={<SettingsIcon />} iconPosition="start" label="Настройки" />
-          </Tabs>
-
-          <Divider />
-
-          <Box sx={{ p: 3 }}>
-            <TabPanel index={0} value={activeTab}>
-              <Box
-                sx={{
-                  alignItems: { xs: 'stretch', sm: 'center' },
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  gap: 2,
-                  justifyContent: 'space-between',
-                  mb: 2,
-                }}
-              >
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                  <Typography component="h2" variant="h6">
-                    Участники организации
-                  </Typography>
-                  <Typography color="text.secondary" variant="body2">
-                    Управление доступом пользователей через приглашения.
-                  </Typography>
-                </Box>
-
-                <Button
-                  disabled={!currentOrgId}
-                  onClick={() => {
-                    setSuccessMessage('')
-                    setIsInvitationModalOpen(true)
-                  }}
-                  startIcon={<AddIcon />}
-                  variant="contained"
-                >
-                  Пригласить
-                </Button>
-              </Box>
-
-              {successMessage ? (
-                <Alert
-                  onClose={() => setSuccessMessage('')}
-                  severity="success"
-                  sx={{ mb: 2 }}
-                >
-                  {successMessage}
-                </Alert>
-              ) : null}
-
-              {!currentOrgId ? (
-                <Alert severity="warning">
-                  Не задан идентификатор организации. Выберите организацию для
-                  продолжения.
-                </Alert>
-              ) : null}
-
-              {isLoading ? (
-                <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
-                  <CircularProgress />
-                </Box>
-              ) : null}
-
-              {isError ? <Alert severity="error">{error.message}</Alert> : null}
-
-              {!isLoading && !isError && currentOrgId ? (
-                <TableContainer component={Paper} elevation={0} variant="outlined">
-                  <Table aria-label="Список участников организации">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Имя</TableCell>
-                        <TableCell>Email</TableCell>
-                        <TableCell>Локальная роль</TableCell>
-                        <TableCell>Дата добавления</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {members.map((member) => (
-                        <TableRow hover key={member.id}>
-                          <TableCell>{getMemberName(member)}</TableCell>
-                          <TableCell>{member.user.email}</TableCell>
-                          <TableCell>
-                            <Chip label={member.role} size="small" />
-                          </TableCell>
-                          <TableCell>{formatDate(member.createdAt)}</TableCell>
-                        </TableRow>
-                      ))}
-                      {!members.length ? (
-                        <TableRow>
-                          <TableCell colSpan={4}>
-                            <Typography
-                              color="text.secondary"
-                              sx={{ py: 3, textAlign: 'center' }}
-                            >
-                              Участники организации пока не найдены.
-                            </Typography>
-                          </TableCell>
-                        </TableRow>
-                      ) : null}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              ) : null}
-            </TabPanel>
-
-            <TabPanel index={1} value={activeTab}>
-              <Alert severity="info">Раздел обучения будет добавлен позже.</Alert>
-            </TabPanel>
-
-            <TabPanel index={2} value={activeTab}>
-              <Alert severity="info">Настройки организации будут добавлены позже.</Alert>
-            </TabPanel>
-          </Box>
+          <Box sx={{ p: 3 }}>{renderContent()}</Box>
         </Paper>
       </Box>
-
-      <InvitModal
-        currentOrgId={currentOrgId}
-        onClose={() => setIsInvitationModalOpen(false)}
-        onSuccess={handleInvitationSuccess}
-        open={isInvitationModalOpen}
-      />
     </Box>
   )
 }

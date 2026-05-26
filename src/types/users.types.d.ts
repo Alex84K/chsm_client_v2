@@ -13,6 +13,11 @@ export type OrganizationMemberRole =
   | 'STUDENT'
   | 'MANAGER'
 
+export type ChangeableOrganizationMemberRole = Exclude<
+  OrganizationMemberRole,
+  'ADMIN'
+>
+
 export type AuthUser = {
   id: string
   email: string
@@ -36,6 +41,14 @@ export type OrganizationMember = {
 }
 
 export type GetOrganizationMembersResponse = OrganizationMember[]
+
+export type ChangeMemberRoleRequest = {
+  role: ChangeableOrganizationMemberRole
+}
+
+export type ChangeMemberRoleResponse = {
+  message: string
+}
 
 export type UserOrganizationItem = {
   id: string
