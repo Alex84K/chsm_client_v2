@@ -1,3 +1,5 @@
+import type { MemberExternalIdentityDto } from './integrations.types'
+
 export type GlobalUserRole =
   | 'USER'
   | 'ADMIN'
@@ -56,6 +58,7 @@ export type UserOrganizationItem = {
   slug: string
   role: OrganizationMemberRole
   joinedAt: string
+  externalIdentities?: MemberExternalIdentityDto[]
 }
 
 export type UserOrganizationsResponse = UserOrganizationItem[]

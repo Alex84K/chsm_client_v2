@@ -27,3 +27,7 @@ export const clearCurrentOrgDetails = () => {
   sessionStorage.removeItem(CURRENT_ORG_ID_KEY);
   sessionStorage.removeItem(CURRENT_ORG_ROLE_KEY);
 };
+
+export const getOrganisationId = (): string => {
+  return sessionStorage.getItem(CURRENT_ORG_ID_KEY) ?? ""
+}

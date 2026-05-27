@@ -154,7 +154,10 @@ function App() {
           path="/cabinet"
           element={
             accessToken && activeOrganizationId && isOrgRestricted ? (
-              <Cabinet onLogout={handleLogout} />
+              <Cabinet
+                currentOrgId={activeOrganizationId}
+                onLogout={handleLogout}
+              />
             ) : accessToken && activeOrganizationId && !isOrgRestricted ? (
               <Navigate to="/admin" replace />
             ) : accessToken ? (

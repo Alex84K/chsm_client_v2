@@ -31,6 +31,7 @@ import SchoolIcon from '@mui/icons-material/School'
 import SettingsIcon from '@mui/icons-material/Settings'
 import StudentList from './StudentList'
 import UserList from './UserList'
+import SettingsComp from './SettingsComp'
 
 const drawerWidth = 240
 
@@ -154,6 +155,10 @@ const AdminPanel = ({ currentOrgId, onLogout }: AdminPanelProps) => {
 
     if (activeSection === 'sessions') {
       return <Alert severity="info">Раздел занятий будет добавлен позже.</Alert>
+    }
+
+    if (activeSection === 'settings') {
+      return <SettingsComp currentOrgId={currentOrgId} />
     }
 
     return <Alert severity="info">Настройки организации будут добавлены позже.</Alert>
