@@ -20,6 +20,7 @@ import { useStudents } from "../hooks/useStudents";
 import AddStudentModal from "../modals/AddStudentModal";
 import SenderMessageModal from "../modals/SenderMessageModal";
 import type { Student } from "../types/student.types";
+import { useEffect } from "react";
 
 type StudentListProps = {
   currentOrgId: string;
@@ -103,6 +104,10 @@ const StudentList = ({ currentOrgId }: StudentListProps) => {
 
   const isSelected = (id: string) =>
     selectedStudents.findIndex((s) => s.id === id) !== -1;
+
+  useEffect(() => {
+    console.log("Студенты:", students);
+  }, [students]);
 
   return (
     <>

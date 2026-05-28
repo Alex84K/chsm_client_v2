@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -93,6 +93,7 @@ export default function SenderMessageModal({
           userIds: users.map((u) => u.userId),
           text: message,
         };
+        console.log("Отправляем TG с полезной нагрузкой:", payload);
         const res = await sendTelegramBroadcast(currentOrgId, payload);
 
         if (res.sentCount === 0) {
@@ -157,6 +158,10 @@ export default function SenderMessageModal({
   // Считаем сколько реально получат сообщение
   const countTg = users.length; // На фронте нет прямой информации о привязке ТГ, поэтому ориентируемся на полное количество выбранных
   const countEmail = users.filter((u) => getStudentEmail(u)).length;
+
+  useEffect(() => {
+      console.log("Users:", users);
+    }, [users]);
 
   return (
     <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
