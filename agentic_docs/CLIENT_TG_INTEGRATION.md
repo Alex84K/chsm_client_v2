@@ -22,7 +22,7 @@ sequenceDiagram
         UI->>Студент: Отображает кнопку "Подключить Telegram-уведомления"
         Студент->>UI: Нажимает кнопку "Подключить"
         UI->>UI: Показывает индикатор загрузки (Spinner)
-        UI->>API: GET /api/students/me/telegram-link
+        UI->>API: GET /organizations/{orgId}/students/me/telegram-link
         API-->>UI: 200 OK { url, expiresAt }
         UI->>UI: Открывает ссылку в новой вкладке (или редирект)
         Note over Студент, UI: Открывается t.me/Bot?start=token
@@ -109,7 +109,8 @@ export interface TelegramLinkResponseDto {
 
 #### A. Студент: Получить ссылку на привязку
 -   **Метод**: `GET`
--   **Путь**: `/api/students/me/telegram-link`
+-   **Путь**: `/organizations/:orgId/students/me/telegram-link`
+-   **Параметры**: `:orgId` — UUID организации
 -   **Заголовки**: `Authorization: Bearer <Student_JWT>`
 -   **Ответ (200 OK)**: `TelegramLinkResponseDto`
 -   **Ошибки**:

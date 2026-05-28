@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   Alert,
   AppBar,
@@ -19,7 +19,12 @@ import SpaceDashboardOutlinedIcon from '@mui/icons-material/SpaceDashboardOutlin
 import TelegramIcon from '@mui/icons-material/Telegram'
 import RefreshIcon from '@mui/icons-material/Refresh'
 import LinkOffIcon from '@mui/icons-material/LinkOff'
-import { getTelegramIdentity } from '../api/integrations.api'
+
+// Импортируем сервисы
+import { 
+  getStudentIdentities, // Новый метод API
+  getTelegramIdentity 
+} from '../api/integrations.api'
 import {
   useDeleteExternalIdentity,
   useTelegramLink,
@@ -43,53 +48,66 @@ const formatDateTime = (date: string) =>
 const Cabinet = ({ currentOrgId, onLogout }: CabinetProps) => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  
   const [successMessage, setSuccessMessage] = React.useState('')
   const [linkError, setLinkError] = React.useState('')
   const [pendingLinkExpiresAt, setPendingLinkExpiresAt] = React.useState('')
+
+  // 1. Загружаем данные организаций (только ради названия школы)
+  const { data: organizations = [] } = useUserOrganizations()
+  const currentOrganization = organizations.find((org) => org.id === currentOrgId)
+
+  // 2. ЗАГРУЗКА ПРИВЯЗОК (Новый эндпоинт: /students/me/identities)
   const {
-    data: organizations = [],
-    error: organizationsError,
-    isError: isOrganizationsError,
-    isLoading: isOrganizationsLoading,
-  } = useUserOrganizations()
+    data: identities = [],
+    isLoading: isIdentitiesLoading,
+    refetch: refetchIdentities
+  } = useQuery({
+    queryKey: ['student-identities', currentOrgId],
+    queryFn: () => getStudentIdentities(currentOrgId),
+    enabled: !!currentOrgId,
+  })
+
+  // 3. Хуки мутаций
   const {
     error: telegramLinkError,
     isPending: isTelegramLinkPending,
     mutate: createTelegramLink,
   } = useTelegramLink()
+
   const {
     error: deleteIdentityError,
     isPending: isDeleteIdentityPending,
     mutate: deleteIdentity,
   } = useDeleteExternalIdentity()
 
-  const currentOrganization = organizations.find(
-    (organization) => organization.id === currentOrgId,
-  )
-  const telegramIdentity = getTelegramIdentity(
-    currentOrganization?.externalIdentities,
-  )
+  // 4. Определяем наличие Telegram в новом формате данных
+  // Теперь бэкенд возвращает плоский список, ищем по провайдеру
+  const telegramIdentity = identities.find(id => id.provider === 'TELEGRAM')
+
   const isWaitingForTelegram = Boolean(pendingLinkExpiresAt && !telegramIdentity)
   const isLinkExpired = pendingLinkExpiresAt
     ? Date.parse(pendingLinkExpiresAt) <= Date.now()
     : false
 
+  // 5. Polling: Обновляем только привязки раз в 5 секунд, если ждем активации
   React.useEffect(() => {
     if (!isWaitingForTelegram || isLinkExpired) {
       return
     }
 
     const intervalId = window.setInterval(() => {
-      void queryClient.invalidateQueries({ queryKey: ['user-organizations'] })
+      void refetchIdentities()
     }, 5000)
 
     return () => window.clearInterval(intervalId)
-  }, [isLinkExpired, isWaitingForTelegram, queryClient])
+  }, [isLinkExpired, isWaitingForTelegram, refetchIdentities])
 
+  // 6. Сброс состояния ожидания при успехе
   React.useEffect(() => {
     if (telegramIdentity && pendingLinkExpiresAt) {
       setPendingLinkExpiresAt('')
-      setSuccessMessage('Telegram подключен.')
+      setSuccessMessage('Telegram успешно подключен!')
     }
   }, [pendingLinkExpiresAt, telegramIdentity])
 
@@ -99,34 +117,36 @@ const Cabinet = ({ currentOrgId, onLogout }: CabinetProps) => {
   }
 
   const handleCreateTelegramLink = () => {
+    if (!currentOrgId) return
     setSuccessMessage('')
     setLinkError('')
-    createTelegramLink(undefined, {
+    
+    createTelegramLink(currentOrgId, {
       onSuccess: (link) => {
         setPendingLinkExpiresAt(link.expiresAt)
         window.open(link.url, '_blank', 'noopener,noreferrer')
       },
-      onError: (error) => {
-        setLinkError(error.message)
+      onError: (error: any) => {
+        setLinkError(error.message || 'Ошибка при генерации ссылки')
       },
     })
   }
 
   const handleRefreshStatus = () => {
-    void queryClient.invalidateQueries({ queryKey: ['user-organizations'] })
+    void refetchIdentities()
   }
 
   const handleDeleteIdentity = () => {
-    if (!telegramIdentity) {
-      return
-    }
-
+    if (!telegramIdentity) return
     setSuccessMessage('')
-    deleteIdentity(telegramIdentity.id, {
-      onSuccess: () => {
-        setSuccessMessage('Telegram отключен.')
-      },
-    })
+    if (window.confirm('Вы уверены, что хотите отключить Telegram-уведомления?')) {
+      deleteIdentity(telegramIdentity.id, {
+        onSuccess: () => {
+          setSuccessMessage('Telegram-аккаунт отвязан.')
+          void refetchIdentities()
+        },
+      })
+    }
   }
 
   return (
@@ -136,10 +156,9 @@ const Cabinet = ({ currentOrgId, onLogout }: CabinetProps) => {
           <Box className="admin-brand">
             <SpaceDashboardOutlinedIcon color="primary" />
             <Typography component="div" variant="h6">
-              Cabinet
+              Кабинет студента
             </Typography>
           </Box>
-
           <Button
             color="inherit"
             onClick={handleLogout}
@@ -151,7 +170,7 @@ const Cabinet = ({ currentOrgId, onLogout }: CabinetProps) => {
         </Toolbar>
       </AppBar>
 
-      <Container className="admin-container" maxWidth="md">
+      <Container className="admin-container" maxWidth="md" sx={{ mt: 4 }}>
         <Paper elevation={0} sx={{ border: '1px solid', borderColor: 'divider', p: 3 }}>
           <Stack spacing={3}>
             <Box>
@@ -159,32 +178,24 @@ const Cabinet = ({ currentOrgId, onLogout }: CabinetProps) => {
                 Личный кабинет
               </Typography>
               <Typography color="text.secondary">
-                Управление личными подключениями и уведомлениями.
+                Управление уведомлениями организации: <strong>{currentOrganization?.name || '...'}</strong>
               </Typography>
             </Box>
 
-            {successMessage ? (
-              <Alert onClose={() => setSuccessMessage('')} severity="success">
-                {successMessage}
+            {successMessage && <Alert onClose={() => setSuccessMessage('')} severity="success">{successMessage}</Alert>}
+            {linkError && <Alert severity="error">{linkError}</Alert>}
+            {(telegramLinkError || deleteIdentityError) && (
+              <Alert severity="error">
+                {telegramLinkError?.message || deleteIdentityError?.message}
               </Alert>
-            ) : null}
-            {linkError ? <Alert severity="error">{linkError}</Alert> : null}
-            {telegramLinkError ? (
-              <Alert severity="error">{telegramLinkError.message}</Alert>
-            ) : null}
-            {deleteIdentityError ? (
-              <Alert severity="error">{deleteIdentityError.message}</Alert>
-            ) : null}
-            {isOrganizationsError ? (
-              <Alert severity="error">{organizationsError.message}</Alert>
-            ) : null}
+            )}
 
             <Paper variant="outlined" sx={{ p: 2.5 }}>
               <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
                 <Box
                   sx={{
                     alignItems: 'center',
-                    bgcolor: 'primary.main',
+                    bgcolor: telegramIdentity ? 'success.main' : 'primary.main',
                     borderRadius: 1,
                     color: 'primary.contrastText',
                     display: 'flex',
@@ -197,11 +208,7 @@ const Cabinet = ({ currentOrgId, onLogout }: CabinetProps) => {
                 </Box>
 
                 <Box sx={{ flexGrow: 1 }}>
-                  <Stack
-                    direction={{ xs: 'column', sm: 'row' }}
-                    spacing={1}
-                    sx={{ alignItems: { xs: 'flex-start', sm: 'center' }, mb: 1 }}
-                  >
+                  <Stack direction="row" spacing={1} sx={{ alignItems: 'center', mb: 1 }}>
                     <Typography component="h2" variant="h6">
                       Telegram-уведомления
                     </Typography>
@@ -212,51 +219,44 @@ const Cabinet = ({ currentOrgId, onLogout }: CabinetProps) => {
                     />
                   </Stack>
 
-                  {isOrganizationsLoading ? (
-                    <Box sx={{ py: 2 }}>
-                      <CircularProgress size={24} />
-                    </Box>
+                  {isIdentitiesLoading ? (
+                    <CircularProgress size={20} />
                   ) : telegramIdentity ? (
                     <Typography color="text.secondary" variant="body2">
-                      Подключен аккаунт{' '}
-                      {telegramIdentity.meta?.username
-                        ? `@${telegramIdentity.meta.username}`
-                        : telegramIdentity.externalId}
-                      . Дата привязки: {formatDateTime(telegramIdentity.createdAt)}.
+                      Подключен аккаунт: <strong>@{telegramIdentity.username || telegramIdentity.firstName}</strong>
+                      <br />
+                      Дата подключения: {formatDateTime(telegramIdentity.connectedAt)}
                     </Typography>
                   ) : (
                     <Typography color="text.secondary" variant="body2">
-                      Подключите Telegram, чтобы получать уведомления от школы.
+                      Подключите бота, чтобы получать расписание и важные новости школы.
                     </Typography>
                   )}
 
-                  {isWaitingForTelegram && !isLinkExpired ? (
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                      Ожидаем подтверждения в Telegram. Ссылка действует до{' '}
-                      {formatDateTime(pendingLinkExpiresAt)}.
+                  {isWaitingForTelegram && !isLinkExpired && (
+                    <Alert severity="info" sx={{ mt: 2 }} icon={<CircularProgress size={16} />}>
+                      Ожидаем подтверждения в Telegram... 
+                      (до {new Date(pendingLinkExpiresAt).toLocaleTimeString()})
                     </Alert>
-                  ) : null}
+                  )}
 
-                  {isLinkExpired && !telegramIdentity ? (
+                  {isLinkExpired && !telegramIdentity && (
                     <Alert severity="warning" sx={{ mt: 2 }}>
-                      Срок действия ссылки истек. Сгенерируйте новую ссылку.
+                      Срок ссылки истек. Пожалуйста, создайте новую.
                     </Alert>
-                  ) : null}
+                  )}
                 </Box>
               </Stack>
 
-              <Stack
-                direction={{ xs: 'column', sm: 'row' }}
-                spacing={1}
-                sx={{ justifyContent: 'flex-end', mt: 2 }}
-              >
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ justifyContent: 'flex-end', mt: 3 }}>
                 <Button
                   onClick={handleRefreshStatus}
                   startIcon={<RefreshIcon />}
-                  variant="outlined"
+                  variant="text"
                 >
-                  Проверить подключение
+                  Обновить
                 </Button>
+                
                 {telegramIdentity ? (
                   <Button
                     color="error"
@@ -274,7 +274,7 @@ const Cabinet = ({ currentOrgId, onLogout }: CabinetProps) => {
                     startIcon={<TelegramIcon />}
                     variant="contained"
                   >
-                    {isTelegramLinkPending ? 'Готовим ссылку...' : 'Подключить Telegram'}
+                    {isTelegramLinkPending ? 'Загрузка...' : isWaitingForTelegram ? 'Открыть Telegram' : 'Подключить Telegram'}
                   </Button>
                 )}
               </Stack>

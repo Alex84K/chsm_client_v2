@@ -139,11 +139,12 @@ export const useDeleteExternalIdentity = () => {
   })
 }
 
+// Добавьте 'string' как третий аргумент в useMutation <Data, Error, Variables>
 export const useTelegramLink = () =>
-  useMutation<TelegramLinkResponseDto, UsersQueryError>({
-    mutationFn: async () => {
+  useMutation<TelegramLinkResponseDto, UsersQueryError, string>({
+    mutationFn: async (orgId: string) => {
       try {
-        return await getStudentTelegramLink()
+        return await getStudentTelegramLink(orgId)
       } catch (error) {
         throw mapIntegrationError(error)
       }
