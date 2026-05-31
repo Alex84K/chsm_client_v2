@@ -1,9 +1,11 @@
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Checkbox from "@mui/material/Checkbox";
 import CircularProgress from "@mui/material/CircularProgress";
+import IconButton from "@mui/material/IconButton";
 import Paper from "@mui/material/Paper";
 import { styled } from "@mui/material/styles";
 import Table from "@mui/material/Table";
@@ -15,6 +17,7 @@ import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 import TelegramIcon from "@mui/icons-material/Telegram";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { useOrganizationMembers } from "../hooks/useOrganizationMembers";
 import { useStudents } from "../hooks/useStudents";
 import AddStudentModal from "../modals/AddStudentModal";
@@ -53,6 +56,7 @@ const formatDate = (date: Date | string) =>
   }).format(new Date(date));
 
 const StudentList = ({ currentOrgId }: StudentListProps) => {
+  const navigate = useNavigate();
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [isSenderModalOpen, setIsSenderModalOpen] = React.useState(false);
   const [successMessage, setSuccessMessage] = React.useState("");
@@ -221,6 +225,7 @@ const StudentList = ({ currentOrgId }: StudentListProps) => {
                 <StyledTableCell align="right">Страна</StyledTableCell>
                 <StyledTableCell align="right">Зачётка</StyledTableCell>
                 <StyledTableCell align="right">Дата зачисления</StyledTableCell>
+                <StyledTableCell align="right">Действия</StyledTableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -276,12 +281,26 @@ const StudentList = ({ currentOrgId }: StudentListProps) => {
                     <StyledTableCell align="right">
                       {formatDate(student.enrolledAt)}
                     </StyledTableCell>
+                    <StyledTableCell
+                      align="right"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        onClick={() =>
+                          navigate(`/admin/students/${student.id}`)
+                        }
+                      >
+                        <OpenInNewIcon fontSize="small" />
+                      </IconButton>
+                    </StyledTableCell>
                   </StyledTableRow>
                 );
               })}
               {!students.length ? (
                 <StyledTableRow>
-                  <StyledTableCell colSpan={9}>
+                  <StyledTableCell colSpan={10}>
                     <Typography
                       color="text.secondary"
                       sx={{ py: 3, textAlign: "center" }}

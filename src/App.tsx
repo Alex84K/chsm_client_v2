@@ -9,9 +9,7 @@ import Cabinet from "./components/Cabinet";
 import LoginComp from "./components/LoginComp";
 import OrganizationSelect from "./components/OrganizationSelect";
 import AccountCreationRequest from "./components/AccountCreationRequest";
-import type {
-  AuthUser,
-} from "./types/users.types";
+import type { AuthUser } from "./types/users.types";
 import {
   clearCurrentOrgDetails,
   getCurrentOrgId,
@@ -168,7 +166,7 @@ function App() {
           }
         />
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             accessToken && activeOrganizationId && !isOrgRestricted ? (
               <AdminPanel
