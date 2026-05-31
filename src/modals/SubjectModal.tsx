@@ -12,25 +12,22 @@ import MenuItem from '@mui/material/MenuItem'
 import Select from '@mui/material/Select'
 import Switch from '@mui/material/Switch'
 import TextField from '@mui/material/TextField'
-import type { AcademicYear, SessionLevel, SessionRun } from '../types/session.types'
+import type { SessionRun } from '../types/session.types'
 
 export interface SubjectFormData {
   title: string
-  levelId: string
   sessionRunId: string
-  teacherName: string
+  scale: string
   hours: string
+  isCore: boolean
   hasClassroom: boolean
-  classroomCourseworkId: string
 }
 
 interface SubjectModalProps {
   open: boolean
   editMode: boolean
   initialData: SubjectFormData
-  levels: SessionLevel[]
   runs: SessionRun[]
-  years: AcademicYear[]
   onClose: () => void
   onSubmit: (data: SubjectFormData) => void
   errorMessage?: string | null
@@ -40,9 +37,7 @@ const SubjectModal = ({
   open,
   editMode,
   initialData,
-  levels,
   runs,
-  years,
   onClose,
   onSubmit,
   errorMessage,
@@ -59,7 +54,7 @@ const SubjectModal = ({
     e.preventDefault()
     setLocalError(null)
 
-    if (!form.title || !form.levelId || !form.sessionRunId) {
+    if (!form.title || !form.sessionRunId || !form.scale) {
       setLocalError('Пожалуйста, заполните все обязательные поля.')
       return
     }
@@ -88,10 +83,12 @@ const SubjectModal = ({
             />
 
             <TextField
-              label="Преподаватель"
+              label="Масштаб"
+              type="number"
               fullWidth
-              value={form.teacherName}
-              onChange={e => setForm({ ...form, teacherName: e.target.value })}
+              required
+              value={form.scale}
+              onChange={e => setForm({ ...form, scale: e.target.value })}
             />
 
             <TextField
@@ -103,38 +100,29 @@ const SubjectModal = ({
             />
 
             <FormControl fullWidth required>
-              <InputLabel>Уровень обучения</InputLabel>
-              <Select
-                value={form.levelId}
-                label="Уровень обучения"
-                onChange={e => setForm({ ...form, levelId: e.target.value })}
-              >
-                {levels.map(l => (
-                  <MenuItem key={l.id} value={l.id}>
-                    {l.title}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl fullWidth required>
               <InputLabel>Запуск сессии</InputLabel>
               <Select
                 value={form.sessionRunId}
                 label="Запуск сессии"
                 onChange={e => setForm({ ...form, sessionRunId: e.target.value })}
               >
-                {runs.map(r => {
-                  const l = levels.find(lvl => lvl.id === r.levelId)
-                  const y = years.find(yr => yr.id === r.academicYearId)
-                  return (
-                    <MenuItem key={r.id} value={r.id}>
-                      {l?.title ?? `Run ${r.id}`} — {y?.label ?? `Year ${r.academicYearId}`}
-                    </MenuItem>
-                  )
-                })}
+                {runs.map(r => (
+                  <MenuItem key={r.id} value={r.id}>
+                    Run {r.id}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={form.isCore}
+                  onChange={e => setForm({ ...form, isCore: e.target.checked })}
+                />
+              }
+              label="Основной предмет"
+            />
 
             <FormControlLabel
               control={
@@ -145,15 +133,6 @@ const SubjectModal = ({
               }
               label="Связать с Google Classroom"
             />
-
-            {form.hasClassroom && (
-              <TextField
-                label="Classroom Coursework ID"
-                fullWidth
-                value={form.classroomCourseworkId}
-                onChange={e => setForm({ ...form, classroomCourseworkId: e.target.value })}
-              />
-            )}
           </Box>
         </DialogContent>
         <DialogActions>

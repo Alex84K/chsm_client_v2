@@ -1,17 +1,18 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AxiosError } from 'axios';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   getStudentEnrollments,
+  getAllOrganizationEnrollments,
   createEnrollment,
   getEnrollmentById,
   updateEnrollmentStatus,
+  deleteEnrollment,
   createGradeEntry,
   updateGradeEntry as updateGradeEntryApi,
   deleteGradeEntry,
   submitGradebook,
   approveGradebook,
   updateGradebookStatus,
-} from '../api/enrollments.api';
+} from "../api/enrollments.api";
 import type {
   Enrollment,
   CreateEnrollmentDto,
@@ -19,18 +20,25 @@ import type {
   CreateGradeEntryDto,
   UpdateGradeEntryDto,
   UpdateGradebookDto,
-} from '../types/enrollments.types';
+} from "../types/enrollments.types";
 
 export const useStudentEnrollments = (orgId: string, studentId: string) =>
   useQuery<Enrollment[], Error>({
-    queryKey: ['enrollments', orgId, 'student', studentId],
+    queryKey: ["enrollments", orgId, "student", studentId],
     queryFn: () => getStudentEnrollments(orgId, studentId),
     enabled: Boolean(orgId) && Boolean(studentId),
   });
 
+export const useAllOrganizationEnrollments = (orgId: string) =>
+  useQuery<Enrollment[], Error>({
+    queryKey: ["enrollments", orgId, "all"],
+    queryFn: () => getAllOrganizationEnrollments(orgId),
+    enabled: Boolean(orgId),
+  });
+
 export const useEnrollment = (orgId: string, enrollmentId: string) =>
   useQuery<Enrollment, Error>({
-    queryKey: ['enrollment', orgId, enrollmentId],
+    queryKey: ["enrollment", orgId, enrollmentId],
     queryFn: () => getEnrollmentById(orgId, enrollmentId),
     enabled: Boolean(orgId) && Boolean(enrollmentId),
   });
@@ -46,7 +54,7 @@ export const useCreateEnrollment = () => {
     mutationFn: ({ orgId, payload }) => createEnrollment(orgId, payload),
     onSuccess: (data, { orgId }) => {
       void queryClient.invalidateQueries({
-        queryKey: ['enrollments', orgId, 'student', data.studentId],
+        queryKey: ["enrollments", orgId, "student", data.studentId],
       });
     },
   });
@@ -64,10 +72,10 @@ export const useUpdateEnrollmentStatus = () => {
       updateEnrollmentStatus(orgId, id, payload),
     onSuccess: (data, { orgId, id }) => {
       void queryClient.invalidateQueries({
-        queryKey: ['enrollment', orgId, id],
+        queryKey: ["enrollment", orgId, id],
       });
       void queryClient.invalidateQueries({
-        queryKey: ['enrollments', orgId, 'student', data.studentId],
+        queryKey: ["enrollments", orgId, "student", data.studentId],
       });
     },
   });
@@ -85,9 +93,9 @@ export const useCreateGradeEntry = () => {
   >({
     mutationFn: ({ orgId, enrollmentId, payload }) =>
       createGradeEntry(orgId, enrollmentId, payload),
-    onSuccess: (data, { orgId, enrollmentId }) => {
+    onSuccess: (_, { orgId, enrollmentId }) => {
       void queryClient.invalidateQueries({
-        queryKey: ['enrollment', orgId, enrollmentId],
+        queryKey: ["enrollment", orgId, enrollmentId],
       });
     },
   });
@@ -108,9 +116,9 @@ export const useUpdateGradeEntry = () => {
   >({
     mutationFn: ({ orgId, enrollmentId, gradeId, payload }) =>
       updateGradeEntryApi(orgId, enrollmentId, gradeId, payload),
-    onSuccess: (data, { orgId, enrollmentId }) => {
+    onSuccess: (_, { orgId, enrollmentId }) => {
       void queryClient.invalidateQueries({
-        queryKey: ['enrollment', orgId, enrollmentId],
+        queryKey: ["enrollment", orgId, enrollmentId],
       });
     },
   });
@@ -128,7 +136,7 @@ export const useDeleteGradeEntry = () => {
       deleteGradeEntry(orgId, enrollmentId, gradeId),
     onSuccess: (_, { orgId, enrollmentId }) => {
       void queryClient.invalidateQueries({
-        queryKey: ['enrollment', orgId, enrollmentId],
+        queryKey: ["enrollment", orgId, enrollmentId],
       });
     },
   });
@@ -139,17 +147,19 @@ export const useDeleteGradeEntry = () => {
 export const useSubmitGradebook = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<Enrollment, Error, { orgId: string; enrollmentId: string }>(
-    {
-      mutationFn: ({ orgId, enrollmentId }) =>
-        submitGradebook(orgId, enrollmentId),
-      onSuccess: (data, { orgId, enrollmentId }) => {
-        void queryClient.invalidateQueries({
-          queryKey: ['enrollment', orgId, enrollmentId],
-        });
-      },
-    }
-  );
+  return useMutation<
+    Enrollment,
+    Error,
+    { orgId: string; enrollmentId: string }
+  >({
+    mutationFn: ({ orgId, enrollmentId }) =>
+      submitGradebook(orgId, enrollmentId),
+    onSuccess: (_, { orgId, enrollmentId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["enrollment", orgId, enrollmentId],
+      });
+    },
+  });
 };
 
 export const useApproveGradebook = () => {
@@ -164,10 +174,10 @@ export const useApproveGradebook = () => {
       approveGradebook(orgId, enrollmentId, payload),
     onSuccess: (data, { orgId, enrollmentId }) => {
       void queryClient.invalidateQueries({
-        queryKey: ['enrollment', orgId, enrollmentId],
+        queryKey: ["enrollment", orgId, enrollmentId],
       });
       void queryClient.invalidateQueries({
-        queryKey: ['enrollments', orgId, 'student', data.studentId],
+        queryKey: ["enrollments", orgId, "student", data.studentId],
       });
     },
   });
@@ -179,13 +189,38 @@ export const useUpdateGradebookStatus = () => {
   return useMutation<
     void,
     Error,
-    { orgId: string; enrollmentId: string; gradebookId: string; payload: UpdateGradebookDto }
+    {
+      orgId: string;
+      enrollmentId: string;
+      gradebookId: string;
+      payload: UpdateGradebookDto;
+    }
   >({
     mutationFn: ({ orgId, gradebookId, payload }) =>
       updateGradebookStatus(orgId, gradebookId, payload),
     onSuccess: (_, { orgId, enrollmentId }) => {
       void queryClient.invalidateQueries({
-        queryKey: ['enrollment', orgId, enrollmentId],
+        queryKey: ["enrollment", orgId, enrollmentId],
+      });
+    },
+  });
+};
+
+export const useDeleteEnrollment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    void,
+    Error,
+    { orgId: string; id: string; studentId: string }
+  >({
+    mutationFn: ({ orgId, id }) => deleteEnrollment(orgId, id),
+    onSuccess: (_, { orgId, studentId }) => {
+      void queryClient.invalidateQueries({
+        queryKey: ["enrollments", orgId],
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["enrollments", orgId, "student", studentId],
       });
     },
   });

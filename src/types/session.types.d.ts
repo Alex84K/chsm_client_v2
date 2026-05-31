@@ -54,21 +54,19 @@ export interface CreateSessionRunDto {
 
 export interface Subject {
   id: string;
-  levelId: string;
   sessionRunId: string;
   title: string;
-  teacherName?: string;
+  scale: number;
   hours?: number;
-  classroomCourseworkId?: string;
-  hasClassroom: boolean;
+  isCore?: boolean;
+  hasClassroom?: boolean;
 }
 
 export interface CreateSubjectDto {
-  levelId: string;
   sessionRunId: string;
   title: string;
-  teacherName?: string;
+  scale: number;
   hours?: number;
-  classroomCourseworkId?: string;
-  hasClassroom: boolean;
+  isCore?: boolean;
+  hasClassroom?: boolean;
 }

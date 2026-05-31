@@ -3,11 +3,7 @@ import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
-import CircularProgress from "@mui/material/CircularProgress";
-import FormControl from "@mui/material/FormControl";
-import MenuItem from "@mui/material/MenuItem";
 import Paper from "@mui/material/Paper";
-import Select from "@mui/material/Select";
 import Tab from "@mui/material/Tab";
 import Table from "@mui/material/Table";
 import TableBody from "@mui/material/TableBody";
@@ -57,6 +53,7 @@ import {
   useUpdateSubject,
   useDeleteSubject,
 } from "../hooks/useSessions";
+import SessionRunRow from "./SessionRunRow";
 
 // --------------- Styled components ---------------
 
@@ -145,16 +142,14 @@ const emptyRun = (
   classroomCourseId: "0",
 });
 const emptySubject = (
-  levels: SessionLevel[],
   runs: SessionRun[],
 ): SubjectFormData => ({
   title: "",
-  levelId: levels[0]?.id ?? "",
   sessionRunId: runs[0]?.id ?? "",
-  teacherName: "",
+  scale: "",
   hours: "",
+  isCore: false,
   hasClassroom: false,
-  classroomCourseworkId: "",
 });
 
 // --------------- Main Component ---------------
@@ -173,26 +168,13 @@ export default function SessionsList({
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
   // React Query Hooks
-  const {
-    data: years = [],
-    isLoading: isYearsLoading,
-    error: yearsError,
-  } = useAcademicYears(currentOrgId);
-  const {
-    data: levels = [],
-    isLoading: isLevelsLoading,
-    error: levelsError,
-  } = useSessionLevels(currentOrgId);
-  const {
-    data: runs = [],
-    isLoading: isRunsLoading,
-    error: runsError,
-  } = useSessionRuns(currentOrgId);
-  const {
-    data: subjects = [],
-    isLoading: isSubjectsLoading,
-    error: subjectsError,
-  } = useSubjects(currentOrgId);
+  const { data: years = [], error: yearsError } =
+    useAcademicYears(currentOrgId);
+  const { data: levels = [], error: levelsError } =
+    useSessionLevels(currentOrgId);
+  const { data: runs = [], error: runsError } = useSessionRuns(currentOrgId);
+  const { data: subjects = [], error: subjectsError } =
+    useSubjects(currentOrgId);
 
   const createAcademicYearMutation = useCreateAcademicYear();
   const updateAcademicYearMutation = useUpdateAcademicYear();
@@ -210,14 +192,13 @@ export default function SessionsList({
   const updateSubjectMutation = useUpdateSubject();
   const deleteSubjectMutation = useDeleteSubject();
 
-  const isLoading =
-    isYearsLoading || isLevelsLoading || isRunsLoading || isSubjectsLoading;
-
   // Sync/show API loading errors
   React.useEffect(() => {
     const err = yearsError || levelsError || runsError || subjectsError;
     if (err) {
-      setErrorMsg(err.message || "Ошибка при загрузке данных.");
+      setTimeout(() => {
+        setErrorMsg(err.message || "Ошибка при загрузке данных.");
+      }, 0);
     }
   }, [yearsError, levelsError, runsError, subjectsError]);
 
@@ -238,7 +219,7 @@ export default function SessionsList({
     emptyRun([], []),
   );
   const [subjectForm, setSubjectForm] = React.useState<SubjectFormData>(
-    emptySubject([], []),
+    emptySubject([]),
   );
 
   // Delete dialog
@@ -259,7 +240,7 @@ export default function SessionsList({
     setYearForm(emptyYear());
     setLevelForm(emptyLevel());
     setRunForm(emptyRun(levels, years));
-    setSubjectForm(emptySubject(levels, runs));
+    setSubjectForm(emptySubject(runs));
     if (activeTab === "years") setYearModalOpen(true);
     else if (activeTab === "levels") setLevelModalOpen(true);
     else if (activeTab === "runs") setRunModalOpen(true);
@@ -299,12 +280,11 @@ export default function SessionsList({
       const s = item as Subject;
       setSubjectForm({
         title: s.title,
-        levelId: s.levelId,
         sessionRunId: s.sessionRunId,
-        teacherName: s.teacherName || "",
-        hours: String(s.hours || ""),
-        hasClassroom: s.hasClassroom,
-        classroomCourseworkId: s.classroomCourseworkId || "",
+        scale: String(s.scale),
+        hours: s.hours ? String(s.hours) : "",
+        isCore: s.isCore || false,
+        hasClassroom: s.hasClassroom || false,
       });
       setSubjectModalOpen(true);
     }
@@ -331,8 +311,10 @@ export default function SessionsList({
         setSuccessMsg("Учебный год успешно добавлен.");
       }
       setYearModalOpen(false);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Ошибка при сохранении учебного года.");
+    } catch (err: unknown) {
+      setErrorMsg(
+        (err as Error).message || "Ошибка при сохранении учебного года.",
+      );
     }
   };
 
@@ -364,8 +346,10 @@ export default function SessionsList({
         setSuccessMsg("Уровень обучения успешно добавлен.");
       }
       setLevelModalOpen(false);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Ошибка при сохранении уровня обучения.");
+    } catch (err: unknown) {
+      setErrorMsg(
+        (err as Error).message || "Ошибка при сохранении уровня обучения.",
+      );
     }
   };
 
@@ -412,28 +396,36 @@ export default function SessionsList({
         setSuccessMsg("Запуск сессии успешно создан.");
       }
       setRunModalOpen(false);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Ошибка при сохранении запуска сессии.");
+    } catch (err: unknown) {
+      setErrorMsg(
+        (err as Error).message || "Ошибка при сохранении запуска сессии.",
+      );
     }
   };
 
   const handleSubjectSubmit = async (data: SubjectFormData) => {
     setSuccessMsg(null);
     setErrorMsg(null);
-    const parsedHours = parseInt(data.hours, 10) || 0;
+    const parsedScale = parseInt(data.scale, 10);
+    const parsedHours = data.hours ? parseInt(data.hours, 10) : undefined;
+    
+    if (isNaN(parsedScale)) {
+      setErrorMsg("Масштаб должен быть целым числом.");
+      return;
+    }
+    
     try {
       if (editMode && selectedId) {
         await updateSubjectMutation.mutateAsync({
           orgId: currentOrgId,
           id: selectedId,
           payload: {
-            levelId: data.levelId,
             sessionRunId: data.sessionRunId,
             title: data.title,
-            teacherName: data.teacherName || undefined,
+            scale: parsedScale,
             hours: parsedHours,
+            isCore: data.isCore,
             hasClassroom: data.hasClassroom,
-            classroomCourseworkId: data.classroomCourseworkId || undefined,
           },
         });
         setSuccessMsg("Предмет успешно обновлён.");
@@ -441,52 +433,19 @@ export default function SessionsList({
         await createSubjectMutation.mutateAsync({
           orgId: currentOrgId,
           payload: {
-            levelId: data.levelId,
             sessionRunId: data.sessionRunId,
             title: data.title,
-            teacherName: data.teacherName || undefined,
+            scale: parsedScale,
             hours: parsedHours,
+            isCore: data.isCore,
             hasClassroom: data.hasClassroom,
-            classroomCourseworkId: data.classroomCourseworkId || undefined,
           },
         });
         setSuccessMsg("Предмет успешно создан.");
       }
       setSubjectModalOpen(false);
-    } catch (err: any) {
-      setErrorMsg(err.message || "Ошибка при сохранении предмета.");
-    }
-  };
-
-  // --------------- Inline status change ---------------
-
-  const handleStatusChangeInline = async (
-    runId: string,
-    newStatus: SessionRunStatus,
-  ) => {
-    setSuccessMsg(null);
-    setErrorMsg(null);
-    const run = runs.find((r) => r.id === runId);
-    if (!run) return;
-    if (!validateStatusTransition(run.status as SessionRunStatus, newStatus)) {
-      setErrorMsg(
-        `Недопустимый переход статуса из ${run.status} в ${newStatus}.`,
-      );
-      return;
-    }
-    try {
-      await updateSessionRunMutation.mutateAsync({
-        orgId: currentOrgId,
-        id: runId,
-        payload: {
-          status: newStatus,
-        },
-      });
-      setSuccessMsg("Статус запуска сессии успешно изменён.");
-    } catch (err: any) {
-      setErrorMsg(
-        err.message || "Ошибка при изменении статуса запуска сессии.",
-      );
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message || "Ошибка при сохранении предмета.");
     }
   };
 
@@ -556,13 +515,14 @@ export default function SessionsList({
         await deleteSubjectMutation.mutateAsync({ orgId: currentOrgId, id });
         setSuccessMsg("Предмет удалён.");
       }
-    } catch (err: any) {
-      if (err.status === 409) {
+    } catch (err: unknown) {
+      const errorResponse = err as { status?: number; message?: string };
+      if (errorResponse.status === 409) {
         setConflictMsg(
           "Невозможно удалить элемент, так как он используется в учебных процессах. Сначала удалите связанные потоки/предметы.",
         );
       } else {
-        setErrorMsg(err.message || "Ошибка при удалении.");
+        setErrorMsg(errorResponse.message || "Ошибка при удалении.");
       }
     } finally {
       setDeleteOpen(false);
@@ -662,6 +622,7 @@ export default function SessionsList({
             <>
               <TableHead>
                 <TableRow>
+                  <StyledTableCell width={50} />
                   <StyledTableCell>Уровень</StyledTableCell>
                   <StyledTableCell>Учебный год</StyledTableCell>
                   <StyledTableCell>Course ID</StyledTableCell>
@@ -675,77 +636,20 @@ export default function SessionsList({
                   const yearObj = years.find(
                     (y) => y.id === run.academicYearId,
                   );
-                  const allowedStatuses = getAllowedStatuses(run.status);
+                  const allowedStatuses = getAllowedStatuses(
+                    run.status as SessionRunStatus,
+                  );
                   return (
-                    <StyledTableRow key={run.id}>
-                      <StyledTableCell>
-                        {levelObj?.title ?? run.levelId}
-                      </StyledTableCell>
-                      <StyledTableCell>
-                        {yearObj?.label ?? run.academicYearId}
-                      </StyledTableCell>
-                      <StyledTableCell>
-                        {run.classroomCourseId || "0"}
-                      </StyledTableCell>
-                      <StyledTableCell>
-                        <FormControl
-                          size="small"
-                          variant="standard"
-                          sx={{ m: 0, minWidth: 120 }}
-                        >
-                          <Select
-                            value={run.status}
-                            onChange={(e) =>
-                              handleStatusChangeInline(
-                                run.id,
-                                e.target.value as SessionRunStatus,
-                              )
-                            }
-                            disableUnderline
-                            sx={{
-                              fontWeight: "bold",
-                              color:
-                                run.status === "ACTIVE"
-                                  ? "success.main"
-                                  : run.status === "COMPLETED"
-                                    ? "error.main"
-                                    : run.status === "ARCHIVED"
-                                      ? "text.secondary"
-                                      : "info.main",
-                            }}
-                          >
-                            {allowedStatuses.map((st) => (
-                              <MenuItem key={st} value={st}>
-                                {st}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </StyledTableCell>
-                      <StyledTableCell align="right">
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 1,
-                            justifyContent: "flex-end",
-                          }}
-                        >
-                          <Button
-                            size="small"
-                            onClick={() => openEdit("runs", run)}
-                          >
-                            <EditIcon fontSize="small" />
-                          </Button>
-                          <Button
-                            size="small"
-                            color="error"
-                            onClick={() => handleDeleteClick("runs", run.id)}
-                          >
-                            <DeleteIcon fontSize="small" />
-                          </Button>
-                        </Box>
-                      </StyledTableCell>
-                    </StyledTableRow>
+                    <SessionRunRow
+                      key={run.id}
+                      run={run}
+                      levelObj={levelObj}
+                      yearObj={yearObj}
+                      allowedStatuses={allowedStatuses}
+                      orgId={currentOrgId}
+                      onEdit={() => openEdit("runs", run)}
+                      onDelete={() => handleDeleteClick("runs", run.id)}
+                    />
                   );
                 })}
               </TableBody>
@@ -940,7 +844,9 @@ export default function SessionsList({
         initialData={runForm}
         currentStatus={
           editMode && selectedId
-            ? runs.find((r) => r.id === selectedId)?.status
+            ? (runs.find((r) => r.id === selectedId)?.status as
+                | SessionRunStatus
+                | undefined)
             : undefined
         }
         levels={levels}
@@ -953,9 +859,7 @@ export default function SessionsList({
         open={subjectModalOpen}
         editMode={editMode}
         initialData={subjectForm}
-        levels={levels}
         runs={runs}
-        years={years}
         onClose={() => setSubjectModalOpen(false)}
         onSubmit={handleSubjectSubmit}
       />

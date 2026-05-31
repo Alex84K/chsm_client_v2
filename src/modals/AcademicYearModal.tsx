@@ -1,25 +1,25 @@
-import * as React from 'react'
-import Box from '@mui/material/Box'
-import Button from '@mui/material/Button'
-import Dialog from '@mui/material/Dialog'
-import DialogActions from '@mui/material/DialogActions'
-import DialogContent from '@mui/material/DialogContent'
-import DialogTitle from '@mui/material/DialogTitle'
-import TextField from '@mui/material/TextField'
+import * as React from "react";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
+import TextField from "@mui/material/TextField";
 
 export interface AcademicYearFormData {
-  label: string
-  startsAt: string
-  endsAt: string
+  label: string;
+  startsAt: string;
+  endsAt: string;
 }
 
 interface AcademicYearModalProps {
-  open: boolean
-  editMode: boolean
-  initialData: AcademicYearFormData
-  onClose: () => void
-  onSubmit: (data: AcademicYearFormData) => void
-  errorMessage?: string | null
+  open: boolean;
+  editMode: boolean;
+  initialData: AcademicYearFormData;
+  onClose: () => void;
+  onSubmit: (data: AcademicYearFormData) => void;
+  errorMessage?: string | null;
 }
 
 const AcademicYearModal = ({
@@ -30,40 +30,48 @@ const AcademicYearModal = ({
   onSubmit,
   errorMessage,
 }: AcademicYearModalProps) => {
-  const [form, setForm] = React.useState<AcademicYearFormData>(initialData)
-  const [localError, setLocalError] = React.useState<string | null>(null)
+  const [form, setForm] = React.useState<AcademicYearFormData>(initialData);
+  const [localError, setLocalError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
-    setForm(initialData)
-    setLocalError(null)
-  }, [initialData, open])
+    setTimeout(() => {
+      setForm(initialData);
+      setLocalError(null);
+    }, 0);
+  }, [initialData, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setLocalError(null)
+    e.preventDefault();
+    setLocalError(null);
 
     if (!form.label || !form.startsAt || !form.endsAt) {
-      setLocalError('Пожалуйста, заполните все обязательные поля.')
-      return
+      setLocalError("Пожалуйста, заполните все обязательные поля.");
+      return;
     }
     if (new Date(form.startsAt) >= new Date(form.endsAt)) {
-      setLocalError('Ошибка: Дата окончания должна быть строго позже даты начала.')
-      return
+      setLocalError(
+        "Ошибка: Дата окончания должна быть строго позже даты начала.",
+      );
+      return;
     }
 
-    onSubmit(form)
-  }
+    onSubmit(form);
+  };
 
-  const displayError = localError ?? errorMessage
+  const displayError = localError ?? errorMessage;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <form onSubmit={handleSubmit}>
-        <DialogTitle>{editMode ? 'Редактировать учебный год' : 'Добавить учебный год'}</DialogTitle>
+        <DialogTitle>
+          {editMode ? "Редактировать учебный год" : "Добавить учебный год"}
+        </DialogTitle>
         <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 1 }}>
             {displayError && (
-              <Box sx={{ color: 'error.main', fontSize: 14 }}>{displayError}</Box>
+              <Box sx={{ color: "error.main", fontSize: 14 }}>
+                {displayError}
+              </Box>
             )}
             <TextField
               label="Название учебного года"
@@ -71,7 +79,7 @@ const AcademicYearModal = ({
               fullWidth
               required
               value={form.label}
-              onChange={e => setForm({ ...form, label: e.target.value })}
+              onChange={(e) => setForm({ ...form, label: e.target.value })}
             />
             <TextField
               label="Дата начала"
@@ -80,7 +88,7 @@ const AcademicYearModal = ({
               required
               slotProps={{ inputLabel: { shrink: true } }}
               value={form.startsAt}
-              onChange={e => setForm({ ...form, startsAt: e.target.value })}
+              onChange={(e) => setForm({ ...form, startsAt: e.target.value })}
             />
             <TextField
               label="Дата окончания"
@@ -89,7 +97,7 @@ const AcademicYearModal = ({
               required
               slotProps={{ inputLabel: { shrink: true } }}
               value={form.endsAt}
-              onChange={e => setForm({ ...form, endsAt: e.target.value })}
+              onChange={(e) => setForm({ ...form, endsAt: e.target.value })}
             />
           </Box>
         </DialogContent>
@@ -101,7 +109,7 @@ const AcademicYearModal = ({
         </DialogActions>
       </form>
     </Dialog>
-  )
-}
+  );
+};
 
-export default AcademicYearModal
+export default AcademicYearModal;
